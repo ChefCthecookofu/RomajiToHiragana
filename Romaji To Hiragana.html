@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaji-Hiragana Converter</title>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            background-image: url('https://www.transparenttextures.com/patterns/asfalt-light.png');
+        }
+
+        .sidebar {
+            width: 200px;
+            background: #d32f2f;
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar button {
+            background: #e57373;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .sidebar button:hover {
+            background: #ef5350;
+        }
+
+        .container {
+            flex: 1;
+            text-align: center;
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            background-image: url('https://www.transparenttextures.com/patterns/tatami-light.png');
+            border: 5px solid #d3a625;
+        }
+
+        .container.active {
+            display: block;
+        }
+
+        textarea {
+            width: 80%;
+            height: 100px;
+            padding: 10px;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        h1 {
+            font-family: 'Noto Serif JP', serif;
+            color: #d32f2f;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar button {
+                width: auto;
+                margin: 10px;
+                flex: 1;
+            }
+
+            .container {
+                margin: 10px 0;
+                width: 100%;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="sidebar">
+        <button id="btnRomajiToHiragana">Romaji to Hiragana</button>
+        <button id="btnHiraganaToRomaji">Hiragana to Romaji</button>
+    </div>
+    <div class="container" id="romajiToHiraganaContainer">
+        <h1>Romaji to Hiragana Converter</h1>
+        <textarea id="romajiInput" placeholder="Type Romaji here..."></textarea>
+        <div id="hiraganaOutput"></div>
+    </div>
+    <div class="container" id="hiraganaToRomajiContainer">
+        <h1>Hiragana to Romaji Converter</h1>
+        <textarea id="hiraganaInput" placeholder="Type Hiragana here..."></textarea>
+        <div id="romajiOutput"></div>
+    </div>
+    <script>
+        const romajiToHiraganaMap = {
+            "kya": "きゃ", "kyu": "きゅ", "kyo": "きょ",
+            "sha": "しゃ", "shu": "しゅ", "sho": "しょ",
+            "cha": "ちゃ", "chu": "ちゅ", "cho": "ちょ",
+            "nya": "にゃ", "nyu": "にゅ", "nyo": "にょ",
+            "hya": "ひゃ", "hyu": "ひゅ", "hyo": "ひょ",
+            "mya": "みゃ", "myu": "みゅ", "myo": "みょ",
+            "rya": "りゃ", "ryu": "りゅ", "ryo": "りょ",
+            "gya": "ぎゃ", "gyu": "ぎゅ", "gyo": "ぎょ",
+            "ja": "じゃ", "ju": "じゅ", "jo": "じょ",
+            "bya": "びゃ", "byu": "びゅ", "byo": "びょ",
+            "pya": "ぴゃ", "pyu": "ぴゅ", "pyo": "ぴょ",
+            "a": "あ", "i": "い", "u": "う", "e": "え", "o": "お",
+            "ka": "か", "ki": "き", "ku": "く", "ke": "け", "ko": "こ",
+            "sa": "さ", "shi": "し", "su": "す", "se": "せ", "so": "そ",
+            "ta": "た", "chi": "ち", "tsu": "つ", "te": "て", "to": "と",
+            "na": "な", "ni": "に", "nu": "ぬ", "ne": "ね", "no": "の",
+            "ha": "は", "hi": "ひ", "fu": "ふ", "he": "へ", "ho": "ほ",
+            "ma": "ま", "mi": "み", "mu": "む", "me": "め", "mo": "も",
+            "ya": "や", "yu": "ゆ", "yo": "よ",
+            "ra": "ら", "ri": "り", "ru": "る", "re": "れ", "ro": "ろ",
+            "wa": "わ", "wo": "を", "n": "ん",
+            "ga": "が", "gi": "ぎ", "gu": "ぐ", "ge": "げ", "go": "ご",
+            "za": "ざ", "ji": "じ", "zu": "ず", "ze": "ぜ", "zo": "ぞ",
+            "da": "だ", "ji": "ぢ", "zu": "づ", "de": "で", "do": "ど",
+            "ba": "ば", "bi": "び", "bu": "ぶ", "be": "べ", "bo": "ぼ",
+            "pa": "ぱ", "pi": "ぴ", "pu": "ぷ", "pe": "ぺ", "po": "ぽ"
+        };
+
+        const hiraganaToRomajiMap = Object.fromEntries(
+            Object.entries(romajiToHiraganaMap).map(([romaji, hiragana]) => [hiragana, romaji])
+        );
+
+        document.getElementById('romajiInput').addEventListener('input', function() {
+            const input = this.value.toLowerCase();
+            let output = "";
+            let buffer = "";
+
+            const romajiKeys = Object.keys(romajiToHiraganaMap).sort((a, b) => b.length - a.length);
+
+            for (let i = 0; i < input.length; i++) {
+                buffer += input[i];
+                for (const key of romajiKeys) {
+                    if (buffer.endsWith(key)) {
+                        output += romajiToHiraganaMap[key];
+                        buffer = buffer.slice(0, -key.length);
+                        break;
+                    }
+                }
+            }
+            output += buffer; // append any remaining characters in the buffer
+
+            document.getElementById('hiraganaOutput').innerText = output;
+        });
+
+        document.getElementById('hiraganaInput').addEventListener('input', function() {
+            const input = this.value;
+            let output = "";
+            
+            for (let i = 0; i < input.length; i++) {
+                const char = input[i];
+                output += hiraganaToRomajiMap[char] || char;
+            }
+
+            document.getElementById('romajiOutput').innerText = output;
+        });
+
+        document.getElementById('btnRomajiToHiragana').addEventListener('click', function() {
+            document.getElementById('romajiToHiraganaContainer').classList.add('active');
+            document.getElementById('hiraganaToRomajiContainer').classList.remove('active');
+        });
+
+        document.getElementById('btnHiraganaToRomaji').addEventListener('click', function() {
+            document.getElementById('romajiToHiraganaContainer').classList.remove('active');
+            document.getElementById('hiraganaToRomajiContainer').classList.add('active');
+        });
+
+        // Initialize the default view
+        document.getElementById('btnRomajiToHiragana').click();
+    </script>
+</body>
+</html>
